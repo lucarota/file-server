@@ -57,11 +57,15 @@ class FileServerITTest {
         ResponseEntity<UserData> responseEntity = restTemplate.postForEntity("/services/auth/login", loginRequest, UserData.class);
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
         UserData userData = responseEntity.getBody();
+        assertNotNull(userData);
+        assertNotNull(userData.getId());
         assertEquals("master", userData.getId().getId());
         assertNotNull(userData.getRoles());
 
         HttpHeaders headers = responseEntity.getHeaders();
-        Optional<String> jSessionIdOptional = TestUtils.getJSessionId(headers.getFirst(HttpHeaders.SET_COOKIE));
+        String cookies = headers.getFirst(HttpHeaders.SET_COOKIE);
+        assertNotNull(cookies);
+        Optional<String> jSessionIdOptional = TestUtils.getJSessionId(cookies);
         assertTrue(jSessionIdOptional.isPresent());
         jSessionId = jSessionIdOptional.get();
         LOG.info("JSESSIONID={}", jSessionId);
@@ -70,7 +74,7 @@ class FileServerITTest {
     @Test
     @Order(3)
     void testStorageInfo() {
-        HttpEntity requestEntity = new HttpEntity(null, TestUtils.createHeaders(jSessionId));
+        HttpEntity<Void> requestEntity = new HttpEntity<>(null, TestUtils.createHeaders(jSessionId));
         ResponseEntity<FileStorageInfo> responseEntity = restTemplate.exchange("/services/admin/storage/info", HttpMethod.GET, requestEntity, FileStorageInfo.class);
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
     }
@@ -78,7 +82,7 @@ class FileServerITTest {
     @Test
     @Order(90)
     void testUserLogout() {
-        HttpEntity requestEntity = new HttpEntity(null, TestUtils.createHeaders(jSessionId));
+        HttpEntity<Void> requestEntity = new HttpEntity<>(null, TestUtils.createHeaders(jSessionId));
         ResponseEntity<FileStorageInfo> responseEntity = restTemplate.exchange("/services/auth/logout", HttpMethod.GET, requestEntity, FileStorageInfo.class);
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
     }
