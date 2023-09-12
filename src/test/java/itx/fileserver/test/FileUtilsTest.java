@@ -23,16 +23,15 @@ class FileUtilsTest {
                 Arguments.of( "a/b/c.txt", "a/*/c.txt", true ),
                 Arguments.of( "a/b/c.txt", "a/*/x.txt", false ),
                 Arguments.of( "a.txt", "*", true ),
-                Arguments.of( "data/a.txt", "*", true ),
-                Arguments.of( "home/a.txt", "home/*", true ),
-                Arguments.of( "home/subdir/a.txt", "home/*", true ),
-                Arguments.of( "home/dir/subdir/a.txt", "home/*", true ),
+                Arguments.of( "data/a.txt", "**", true ),
+                Arguments.of( "home/a.txt", "home/**", true ),
+                Arguments.of( "home/subdir/a.txt", "home/**", true ),
+                Arguments.of( "home/dir/subdir/a.txt", "home/**", true ),
                 Arguments.of( "home/dir/subdir/a.txt", "home/dir/subdir/a.txt", true ),
                 Arguments.of( "joe/data", "joe/*", true ),
-                Arguments.of( "joe/", "joe/*", true ),
-                Arguments.of( "joe/", "*", true ),
-                Arguments.of( "joe/data", "*", true ),
-                Arguments.of( "joe/data/file.txt", "*", true )
+                Arguments.of( "joe/", "**", true ),
+                Arguments.of( "joe/data", "**", true ),
+                Arguments.of( "joe/data/file.txt", "**", true )
         );
     }
 

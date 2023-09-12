@@ -32,10 +32,10 @@ class FileAccessManagerServiceTest {
     @ParameterizedTest
     @MethodSource("data")
     void fileAccessManagerServiceTest(FileAccessManagerService fileAccessManagerService) {
-        FilterConfig filterToRemove01 = new FilterConfig("public/readonly/*", "READ", "public");
-        FilterConfig filterToRemove02 = new FilterConfig("joe/for-public/*", "READ", "public");
-        FilterConfig filterToRemove03 = new FilterConfig("public/*", "READ_WRITE", "public");
-        FilterConfig filterToAdd = new FilterConfig("public-dir/*", "READ_WRITE", "public");
+        FilterConfig filterToRemove01 = new FilterConfig("public/readonly/**", "READ", "public");
+        FilterConfig filterToRemove02 = new FilterConfig("joe/for-public/**", "READ", "public");
+        FilterConfig filterToRemove03 = new FilterConfig("public/**", "READ_WRITE", "public");
+        FilterConfig filterToAdd = new FilterConfig("public-dir/**", "READ_WRITE", "public");
         RoleId publicRoleId = new RoleId("public");
 
         assertEquals(8, fileAccessManagerService.getFilters().size());

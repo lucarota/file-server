@@ -1,11 +1,12 @@
 package itx.fileserver.test;
 
+import itx.fileserver.dto.AuditConstants;
+import itx.fileserver.dto.AuditQuery;
+import itx.fileserver.dto.AuditRecord;
 import itx.fileserver.services.data.AuditService;
 import itx.fileserver.services.data.filesystem.AuditServiceFilesystem;
 import itx.fileserver.services.data.filesystem.PersistenceService;
 import itx.fileserver.services.data.inmemory.AuditServiceInmemory;
-import itx.fileserver.dto.AuditQuery;
-import itx.fileserver.dto.AuditRecord;
 import itx.fileserver.test.mocks.PersistenceServiceImpl;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -15,8 +16,6 @@ import java.nio.file.Paths;
 import java.util.Collection;
 import java.util.stream.Stream;
 
-import static itx.fileserver.dto.AuditConstants.FILE_ACCESS;
-import static itx.fileserver.dto.AuditConstants.USER_ACCESS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class AuditServiceTest {
@@ -38,11 +37,11 @@ class AuditServiceTest {
     @ParameterizedTest
     @MethodSource("data")
     void testQueryAuditServiceMatchCategory(AuditService auditService) {
-        AuditQuery auditQuery = AuditQuery.newBuilder().withCategory(USER_ACCESS.NAME).build();
+        AuditQuery auditQuery = AuditQuery.newBuilder().withCategory(AuditConstants.CategoryUserAccess.NAME).build();
         Collection<AuditRecord> audits = auditService.getAudits(auditQuery);
         assertEquals(2, audits.size());
 
-        auditQuery = AuditQuery.newBuilder().withCategory(FILE_ACCESS.NAME).build();
+        auditQuery = AuditQuery.newBuilder().withCategory(AuditConstants.CategoryFileAccess.NAME).build();
         audits = auditService.getAudits(auditQuery);
         assertEquals(8, audits.size());
     }
@@ -50,15 +49,15 @@ class AuditServiceTest {
     @ParameterizedTest
     @MethodSource("data")
     void testQueryAuditServiceMatchAction(AuditService auditService) {
-        AuditQuery auditQuery = AuditQuery.newBuilder().withAction(USER_ACCESS.LOGIN).build();
+        AuditQuery auditQuery = AuditQuery.newBuilder().withAction(AuditConstants.CategoryUserAccess.LOGIN).build();
         Collection<AuditRecord> audits = auditService.getAudits(auditQuery);
         assertEquals(1, audits.size());
 
-        auditQuery = AuditQuery.newBuilder().withAction(FILE_ACCESS.DOWNLOAD).build();
+        auditQuery = AuditQuery.newBuilder().withAction(AuditConstants.CategoryFileAccess.DOWNLOAD).build();
         audits = auditService.getAudits(auditQuery);
         assertEquals(2, audits.size());
 
-        auditQuery = AuditQuery.newBuilder().withAction(FILE_ACCESS.LIST_DIR).build();
+        auditQuery = AuditQuery.newBuilder().withAction(AuditConstants.CategoryFileAccess.LIST_DIR).build();
         audits = auditService.getAudits(auditQuery);
         assertEquals(3, audits.size());
     }
@@ -94,11 +93,11 @@ class AuditServiceTest {
     @ParameterizedTest
     @MethodSource("data")
     void testQueryAuditServiceMatchResourcePatterns(AuditService auditService) {
-        AuditQuery auditQuery = AuditQuery.newBuilder().withResourcePattern("user1/files/*").build();
+        AuditQuery auditQuery = AuditQuery.newBuilder().withResourcePattern("user1/files/**").build();
         Collection<AuditRecord> audits = auditService.getAudits(auditQuery);
         assertEquals(6, audits.size());
 
-        auditQuery = AuditQuery.newBuilder().withResourcePattern("*.txt").build();
+        auditQuery = AuditQuery.newBuilder().withResourcePattern("**/*.txt").build();
         audits = auditService.getAudits(auditQuery);
         assertEquals(5, audits.size());
     }
@@ -128,16 +127,16 @@ class AuditServiceTest {
     }
 
     private static void populateAudits(AuditService auditService) {
-        auditService.storeAudit(new AuditRecord(1546182000L, USER_ACCESS.NAME, USER_ACCESS.LOGIN, "user1", "", "login ok", null));
-        auditService.storeAudit(new AuditRecord(1546182100L, FILE_ACCESS.NAME, FILE_ACCESS.DOWNLOAD, "user1", "user1/files/data.txt", "ok", ""));
-        auditService.storeAudit(new AuditRecord(1546182200L, FILE_ACCESS.NAME, FILE_ACCESS.UPLOAD, "user1", "user1/files/upload.txt", "ok", ""));
-        auditService.storeAudit(new AuditRecord(1546182300L, FILE_ACCESS.NAME, FILE_ACCESS.DELETE, "user1", "user1/files/upload.txt", "ok", ""));
-        auditService.storeAudit(new AuditRecord(1546182400L, FILE_ACCESS.NAME, FILE_ACCESS.UPLOAD, "user2", "user1/files/upload.txt", "ok", ""));
-        auditService.storeAudit(new AuditRecord(1546182500L, FILE_ACCESS.NAME, FILE_ACCESS.LIST_DIR, "user1", "user1/files/", "ok", ""));
-        auditService.storeAudit(new AuditRecord(1546182600L, FILE_ACCESS.NAME, FILE_ACCESS.LIST_DIR, "user1", "user1/", "ok", ""));
-        auditService.storeAudit(new AuditRecord(1546182700L, FILE_ACCESS.NAME, FILE_ACCESS.LIST_DIR, "user1", "user1/xxx/", "error: file does not exits", ""));
-        auditService.storeAudit(new AuditRecord(1546182800L, FILE_ACCESS.NAME, FILE_ACCESS.DOWNLOAD, "user2", "user1/files/zzzz.txt", "error: file does not exits", ""));
-        auditService.storeAudit(new AuditRecord(1546182900L, USER_ACCESS.NAME, USER_ACCESS.LOGOUT, "user1", "", "logout ok", null));
+        auditService.storeAudit(new AuditRecord(1546182000L, AuditConstants.CategoryUserAccess.NAME, AuditConstants.CategoryUserAccess.LOGIN, "user1", "", "login ok", null));
+        auditService.storeAudit(new AuditRecord(1546182100L, AuditConstants.CategoryFileAccess.NAME, AuditConstants.CategoryFileAccess.DOWNLOAD, "user1", "user1/files/data.txt", "ok", ""));
+        auditService.storeAudit(new AuditRecord(1546182200L, AuditConstants.CategoryFileAccess.NAME, AuditConstants.CategoryFileAccess.UPLOAD, "user1", "user1/files/upload.txt", "ok", ""));
+        auditService.storeAudit(new AuditRecord(1546182300L, AuditConstants.CategoryFileAccess.NAME, AuditConstants.CategoryFileAccess.DELETE, "user1", "user1/files/upload.txt", "ok", ""));
+        auditService.storeAudit(new AuditRecord(1546182400L, AuditConstants.CategoryFileAccess.NAME, AuditConstants.CategoryFileAccess.UPLOAD, "user2", "user1/files/upload.txt", "ok", ""));
+        auditService.storeAudit(new AuditRecord(1546182500L, AuditConstants.CategoryFileAccess.NAME, AuditConstants.CategoryFileAccess.LIST_DIR, "user1", "user1/files/", "ok", ""));
+        auditService.storeAudit(new AuditRecord(1546182600L, AuditConstants.CategoryFileAccess.NAME, AuditConstants.CategoryFileAccess.LIST_DIR, "user1", "user1/", "ok", ""));
+        auditService.storeAudit(new AuditRecord(1546182700L, AuditConstants.CategoryFileAccess.NAME, AuditConstants.CategoryFileAccess.LIST_DIR, "user1", "user1/xxx/", "error: file does not exits", ""));
+        auditService.storeAudit(new AuditRecord(1546182800L, AuditConstants.CategoryFileAccess.NAME, AuditConstants.CategoryFileAccess.DOWNLOAD, "user2", "user1/files/zzzz.txt", "error: file does not exits", ""));
+        auditService.storeAudit(new AuditRecord(1546182900L, AuditConstants.CategoryUserAccess.NAME, AuditConstants.CategoryUserAccess.LOGOUT, "user1", "", "logout ok", null));
     }
 
     public static AuditService createInmemoryAuditService() {

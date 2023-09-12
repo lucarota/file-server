@@ -20,7 +20,7 @@ public class AuditQueryFilter implements Predicate<AuditRecord> {
 
     @Override
     public boolean test(AuditRecord auditRecord) {
-        if (!(auditRecord.getTimestamp() >= timeBegin && auditRecord.getTimestamp()<= timeEnd)) {
+        if (!(auditRecord.getTimestamp() >= timeBegin && auditRecord.getTimestamp() <= timeEnd)) {
             return false;
         }
         if (query.getCategory() != null && !query.getCategory().equals(auditRecord.getCategory())) {
@@ -35,10 +35,9 @@ public class AuditQueryFilter implements Predicate<AuditRecord> {
         if (query.getResourcePattern() != null && !FileUtils.wildcardMatch(auditRecord.getResource(), query.getResourcePattern())) {
             return false;
         }
-        if (query.getMessagePattern() != null && !auditRecord.getMessage().matches(query.getMessagePattern())) {
+        if (query.getMessagePattern() != null && auditRecord.getMessage() != null && !auditRecord.getMessage().matches(query.getMessagePattern())) {
             return false;
         }
         return true;
     }
-
 }

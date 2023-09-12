@@ -2,10 +2,6 @@ package itx.fileserver.dto;
 
 public class AuditConstants {
 
-    public static final CategoryUserAccess USER_ACCESS = new CategoryUserAccess();
-    public static final CategoryFileAccess FILE_ACCESS = new CategoryFileAccess();
-    public static final CategoryAdminAccess ADMIN_ACCESS = new CategoryAdminAccess();
-
     private AuditConstants() {
     }
 

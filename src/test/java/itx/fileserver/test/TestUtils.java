@@ -30,14 +30,14 @@ public final class TestUtils {
 
     public static FileServerConfig createFileServerConfigForFileAccessService() {
         List<FilterConfig> filters = new ArrayList<>();
-        filters.add(new FilterConfig("*", "READ_WRITE", "master"));
-        filters.add(new FilterConfig("joe/*", "READ_WRITE", "joe"));
-        filters.add(new FilterConfig("joe/for-jane/*", "READ_WRITE", "joe", "jane"));
-        filters.add(new FilterConfig("joe/for-public/*", "READ", "public"));
-        filters.add(new FilterConfig("joe/for-public/*", "READ_WRITE", "joe"));
-        filters.add(new FilterConfig("jane/*", "READ_WRITE", "jane"));
-        filters.add(new FilterConfig("public/*", "READ_WRITE", "public"));
-        filters.add(new FilterConfig("public/readonly/*", "READ", "public"));
+        filters.add(new FilterConfig("**", "READ_WRITE", "master"));
+        filters.add(new FilterConfig("joe/**", "READ_WRITE", "joe"));
+        filters.add(new FilterConfig("joe/for-jane/**", "READ_WRITE", "joe", "jane"));
+        filters.add(new FilterConfig("joe/for-public/**", "READ", "public"));
+        filters.add(new FilterConfig("joe/for-public/**", "READ_WRITE", "joe"));
+        filters.add(new FilterConfig("jane/**", "READ_WRITE", "jane"));
+        filters.add(new FilterConfig("public/**", "READ_WRITE", "public"));
+        filters.add(new FilterConfig("public/readonly/**", "READ", "public"));
         FileServerConfig fileServerConfig = createFileServerConfigForSecurityService();
         fileServerConfig.setFilters(filters);
         return fileServerConfig;
@@ -45,9 +45,9 @@ public final class TestUtils {
 
     public static Optional<String> getJSessionId(String cookies) {
         String[] split = cookies.split(";");
-        for (int i=0; i<split.length; i++) {
-            if (split[i].startsWith("JSESSIONID=")) {
-                String[] jSplit = split[i].split("=");
+        for (String s : split) {
+            if (s.startsWith("JSESSIONID=")) {
+                String[] jSplit = s.split("=");
                 if (jSplit.length > 1) {
                     return Optional.of(jSplit[1]);
                 }
