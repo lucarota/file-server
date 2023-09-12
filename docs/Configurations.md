@@ -54,7 +54,7 @@ fileserver:
          - public
          - anonymous
    filters:
-     - path: '*'
+     - path: '**'
        access: READ_WRITE
        roles:
          - master         

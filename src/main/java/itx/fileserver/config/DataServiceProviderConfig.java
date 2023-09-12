@@ -3,18 +3,13 @@ package itx.fileserver.config;
 import itx.fileserver.services.data.AuditService;
 import itx.fileserver.services.data.FileAccessManagerService;
 import itx.fileserver.services.data.UserManagerService;
-import itx.fileserver.services.data.filesystem.AuditServiceFilesystem;
-import itx.fileserver.services.data.filesystem.FileAccessManagerServiceFilesystem;
-import itx.fileserver.services.data.filesystem.PersistenceService;
-import itx.fileserver.services.data.filesystem.PersistenceServiceImpl;
-import itx.fileserver.services.data.filesystem.UserManagerServiceFilesystem;
+import itx.fileserver.services.data.filesystem.*;
 import itx.fileserver.services.data.inmemory.AuditServiceInmemory;
 import itx.fileserver.services.data.inmemory.FileAccessManagerServiceInmemory;
 import itx.fileserver.services.data.inmemory.UserManagerServiceInmemory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -25,7 +20,6 @@ import java.nio.file.Paths;
 
 @Configuration
 @EnableConfigurationProperties
-@ConfigurationProperties(prefix = "fileserver")
 public class DataServiceProviderConfig {
 
     private static final Logger LOG = LoggerFactory.getLogger(DataServiceProviderConfig.class);

@@ -30,32 +30,32 @@ fileserver:
         - public
         - joe
   filters:
-    - path: '*'
+    - path: '**'
       access: READ_WRITE
       roles:
         - master
-    - path: 'public/*'
+    - path: 'public/**'
       access: READ_WRITE
       roles:
         - public
-    - path: 'jane/*'
+    - path: 'jane/**'
       access: READ_WRITE
       roles:
         - jane
-    - path: 'joe/*'
+    - path: 'joe/**'
       access: READ_WRITE
       roles:
         - joe
-    - path: 'joe/for-jane/*'
+    - path: 'joe/for-jane/**'
       access: READ_WRITE
       roles:
         - joe
         - jane
-    - path: 'joe/for-everybody/*'
+    - path: 'joe/for-everybody/**'
       access: READ
       roles:
         - public
-    - path: 'joe/for-everybody/*'
+    - path: 'joe/for-everybody/**'
       access: READ_WRITE
       roles:
         - joe
