@@ -15,7 +15,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import javax.servlet.http.HttpSession;
+import jakarta.servlet.http.HttpSession;
 import java.util.Optional;
 
 @RestController
@@ -38,11 +38,8 @@ public class AuthController {
         LOG.info("login: {} {}", loginRequest.getUserName(), httpSession.getId());
         SessionId sessionId = new SessionId(httpSession.getId());
         Optional<UserData> userData = securityService.authorize(sessionId, loginRequest.getUserName(), loginRequest.getPassword());
-        if (userData.isPresent()) {
-            return ResponseEntity.ok().body(userData.get());
-        } else {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
-        }
+        return userData.map(data -> ResponseEntity.ok().body(data))
+                .orElseGet(() -> ResponseEntity.status(HttpStatus.BAD_REQUEST).build());
     }
 
     @GetMapping("/logout")
