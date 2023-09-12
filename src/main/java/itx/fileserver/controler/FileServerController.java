@@ -28,6 +28,7 @@ import org.springframework.web.multipart.MultipartFile;
 import jakarta.servlet.http.HttpServletRequest;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Optional;
@@ -97,6 +98,8 @@ public class FileServerController {
                 return ResponseEntity.ok().contentType(MediaType.APPLICATION_JSON).body(fileInfo);
             }
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        } catch (NoSuchFileException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
         } catch (IOException e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         } catch (OperationNotAllowedException e) {

@@ -105,8 +105,8 @@ public class SecurityServiceImpl implements SecurityService {
         List<SessionInfo> anonymous = new ArrayList<>();
         List<SessionInfo> users = new ArrayList<>();
         List<SessionInfo> admins = new ArrayList<>();
-        anonymousSessions.forEach((id,user) -> anonymous.add(new SessionInfo(id, user.getId(), user.getRoles())));
-        authorizedSessions.forEach((id,user)->{
+        anonymousSessions.forEach((id, user) -> anonymous.add(new SessionInfo(id, user.getId(), user.getRoles())));
+        authorizedSessions.forEach((id, user) -> {
             if (user.getRoles().contains(userService.getAdminRole())) {
                 admins.add(new SessionInfo(id, user.getId(), user.getRoles()));
             } else {
@@ -120,31 +120,38 @@ public class SecurityServiceImpl implements SecurityService {
 
     private void createAnonymousSessionRecord(UserData previousData, SessionId sessionId) {
         if (previousData == null) {
-            AuditRecord auditRecord
-                    = new AuditRecord(Instant.now().getEpochSecond(), AuditConstants.CategoryUserAccess.NAME, AuditConstants.CategoryUserAccess.LOGIN, "ANONYMOUS", "", "OK", sessionId.getId());
+            AuditRecord auditRecord = new AuditRecord(Instant.now().getEpochSecond(),
+                    AuditConstants.CategoryUserAccess.NAME, AuditConstants.CategoryUserAccess.LOGIN, "ANONYMOUS", "",
+                    "OK", sessionId.getId());
             auditService.storeAudit(auditRecord);
         }
     }
 
     private void createLoginRecordOK(String userId, SessionId sessionId) {
-        AuditRecord auditRecord
-                = new AuditRecord(Instant.now().getEpochSecond(), AuditConstants.CategoryUserAccess.NAME, AuditConstants.CategoryUserAccess.LOGIN, userId, "", "OK", sessionId.getId());
+        AuditRecord auditRecord = new AuditRecord(Instant.now().getEpochSecond(),
+                AuditConstants.CategoryUserAccess.NAME, AuditConstants.CategoryUserAccess.LOGIN, userId, "", "OK",
+                sessionId.getId());
         auditService.storeAudit(auditRecord);
     }
 
     private void createLoginRecordFailed(String userId, SessionId sessionId) {
-        AuditRecord auditRecord
-                = new AuditRecord(Instant.now().getEpochSecond(), AuditConstants.CategoryUserAccess.NAME, AuditConstants.CategoryUserAccess.LOGIN, userId, "", "ERROR", sessionId.getId());
+        AuditRecord auditRecord = new AuditRecord(Instant.now().getEpochSecond(),
+                AuditConstants.CategoryUserAccess.NAME, AuditConstants.CategoryUserAccess.LOGIN, userId, "", "ERROR",
+                sessionId.getId());
         auditService.storeAudit(auditRecord);
     }
 
     private void createLogoutRecord(UserData userDataAuthorized, UserData userDataAnonymous, SessionId sessionId) {
         if (userDataAuthorized != null) {
-            AuditRecord auditRecord = new AuditRecord(Instant.now().getEpochSecond(), AuditConstants.CategoryUserAccess.NAME, AuditConstants.CategoryUserAccess.LOGOUT, userDataAuthorized.getId().getId(), "", "OK", sessionId.getId());
+            AuditRecord auditRecord = new AuditRecord(Instant.now().getEpochSecond(),
+                    AuditConstants.CategoryUserAccess.NAME, AuditConstants.CategoryUserAccess.LOGOUT,
+                    userDataAuthorized.getId().getId(), "", "OK", sessionId.getId());
             auditService.storeAudit(auditRecord);
         }
         if (userDataAnonymous != null) {
-            AuditRecord auditRecord = new AuditRecord(Instant.now().getEpochSecond(), AuditConstants.CategoryUserAccess.NAME, AuditConstants.CategoryUserAccess.LOGOUT, "ANONYMOUS", "", "OK", sessionId.getId());
+            AuditRecord auditRecord = new AuditRecord(Instant.now().getEpochSecond(),
+                    AuditConstants.CategoryUserAccess.NAME, AuditConstants.CategoryUserAccess.LOGOUT, "ANONYMOUS", "",
+                    "OK", sessionId.getId());
             auditService.storeAudit(auditRecord);
         }
     }

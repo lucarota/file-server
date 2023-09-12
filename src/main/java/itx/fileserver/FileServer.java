@@ -2,42 +2,32 @@ package itx.fileserver;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.context.ConfigurableApplicationContext;
+import org.springframework.boot.builder.SpringApplicationBuilder;
+import org.springframework.boot.context.event.ApplicationReadyEvent;
+import org.springframework.boot.web.servlet.support.SpringBootServletInitializer;
+import org.springframework.context.event.EventListener;
 
-import java.util.Optional;
-
-@SpringBootApplication
-public class FileServer {
+@SpringBootApplication(scanBasePackages = {"itx.fileserver"})
+public class FileServer extends SpringBootServletInitializer {
 
     private static final Logger LOG = LoggerFactory.getLogger(FileServer.class);
 
-    private ConfigurableApplicationContext context;
-
-    public void start(String[] args) {
-        LOG.info("Spring file server demo started");
-        if (context == null) {
-            context = SpringApplication.run(FileServer.class, args);
-            context.registerShutdownHook();
-        }
-    }
-
-    public void stop() {
-        if (context != null) {
-            context.stop();
-            context = null;
-        }
-    }
-
-    public Optional<ConfigurableApplicationContext> getContext() {
-        return Optional.ofNullable(context);
-    }
-
     public static void main(String[] args) {
-        FileServer fileServer = new FileServer();
-        fileServer.start(args);
+        SpringApplication.run(FileServer.class);
     }
 
+    @EventListener(ApplicationReadyEvent.class)
+    public void doLogAfterStartup() {
+        LOG.info("START MICROSERVICE NOW");
+    }
+
+    @Override
+    protected SpringApplicationBuilder configure(SpringApplicationBuilder builder) {
+        //set register error pagefilter false
+        setRegisterErrorPageFilter(false);
+        builder.sources(FileServer.class);
+        return builder;
+    }
 }

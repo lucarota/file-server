@@ -11,11 +11,13 @@ import java.util.List;
 
 @Configuration
 @EnableConfigurationProperties
-@ConfigurationProperties(prefix = "fileserver")
 public class FileServerConfig {
 
     @Value("${fileserver.home}")
     private String home;
+
+    @Value("${fileserver.realm:Protected}")
+    private String realm;
 
     @Value("${server.session.timeout}")
     private int sessionTimeout;
@@ -32,8 +34,10 @@ public class FileServerConfig {
     @Value("${fileserver.data.basedir:#{null}}")
     private String dataBasedir;
 
+    @Value("${fileserver.users}")
     private List<UserConfig> users;
 
+    @Value("${fileserver.filters}")
     private List<FilterConfig> filters;
 
     public String getHome() {
@@ -98,5 +102,13 @@ public class FileServerConfig {
 
     public void setDataBasedir(String dataBasedir) {
         this.dataBasedir = dataBasedir;
+    }
+
+    public String getRealm() {
+        return realm;
+    }
+
+    public void setRealm(String realm) {
+        this.realm = realm;
     }
 }

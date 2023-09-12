@@ -1,7 +1,10 @@
 package itx.fileserver.config;
 
-import itx.fileserver.services.SecurityService;
 import itx.fileserver.dto.SessionId;
+import itx.fileserver.services.SecurityService;
+import jakarta.servlet.http.HttpSessionEvent;
+import jakarta.servlet.http.HttpSessionIdListener;
+import jakarta.servlet.http.HttpSessionListener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeansException;
@@ -10,10 +13,6 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
 import org.springframework.stereotype.Component;
 import org.springframework.web.context.WebApplicationContext;
-
-import jakarta.servlet.http.HttpSessionEvent;
-import jakarta.servlet.http.HttpSessionIdListener;
-import jakarta.servlet.http.HttpSessionListener;
 
 @Component
 public class SessionListener implements HttpSessionListener, HttpSessionIdListener, ApplicationContextAware {
@@ -32,9 +31,8 @@ public class SessionListener implements HttpSessionListener, HttpSessionIdListen
     @Override
     public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
         LOG.info("setApplicationContext: httpSessionTimeout={}", fileServerConfig.getSessionTimeout());
-        if (applicationContext instanceof WebApplicationContext) {
-            WebApplicationContext webApplicationContext = (WebApplicationContext) applicationContext;
-            webApplicationContext.getServletContext().setSessionTimeout(fileServerConfig.getSessionTimeout());
+        if (applicationContext instanceof WebApplicationContext context && context.getServletContext() != null) {
+            context.getServletContext().setSessionTimeout(fileServerConfig.getSessionTimeout());
         } else {
             LOG.warn("ERROR: Must be inside a web application context !");
         }

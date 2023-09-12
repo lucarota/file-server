@@ -1,4 +1,9 @@
 
+# nobanner
+spring:
+  main:
+    banner-mode: off
+
 server:
   port: 8888
   session:
@@ -12,6 +17,7 @@ server:
 
 fileserver:
    home: /opt/files
+   realm: fileServerRealm
    data:
      storage: inmemory
    anonymous:        #setting for anonymous users
