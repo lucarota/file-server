@@ -1,6 +1,7 @@
 .gradle
 /build/
 /out/
+/target/
 !gradle/wrapper/gradle-wrapper.jar
 gradle
 gradlew
@@ -20,7 +21,6 @@ gradlew.bat
 *.iws
 *.iml
 *.ipr
-/out/
 
 ### NetBeans ###
 /nbproject/private/
