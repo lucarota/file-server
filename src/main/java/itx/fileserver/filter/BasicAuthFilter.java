@@ -16,7 +16,7 @@ import java.util.StringTokenizer;
 
 public class BasicAuthFilter implements Filter {
 
-    private String realm;
+    private final String realm;
 
     private final SecurityService securityService;
     private final HttpSession httpSession;
