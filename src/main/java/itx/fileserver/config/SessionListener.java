@@ -1,6 +1,5 @@
 package itx.fileserver.config;
 
-import itx.fileserver.dto.SessionId;
 import itx.fileserver.services.SecurityService;
 import jakarta.servlet.http.HttpSessionEvent;
 import jakarta.servlet.http.HttpSessionIdListener;
@@ -41,13 +40,14 @@ public class SessionListener implements HttpSessionListener, HttpSessionIdListen
     @Override
     public void sessionCreated(HttpSessionEvent se) {
         LOG.info("sessionCreated: {}", se.getSession().getId());
-        securityService.createAnonymousSession(new SessionId(se.getSession().getId()));
+        securityService.createAnonymousSession(se.getSession().getId());
     }
 
     @Override
     public void sessionDestroyed(HttpSessionEvent se) {
         LOG.info("sessionDestroyed: {}", se.getSession().getId());
-        securityService.terminateSession(new SessionId(se.getSession().getId()));
+        securityService.terminateSession(se.getSession().getId());
+        se.getSession().invalidate();
     }
 
     @Override

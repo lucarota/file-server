@@ -14,4 +14,4 @@ fileserver:
    home: /opt/file-server/files
    data:
      storage: filesystem
-     basedir: /opt/file-server/data
+     basedir: /opt/file-server/config

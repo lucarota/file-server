@@ -9,6 +9,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
 import org.springframework.stereotype.Service;
+import org.springframework.util.FileCopyUtils;
 import org.springframework.util.FileSystemUtils;
 
 import java.io.*;
@@ -34,8 +35,7 @@ public class FileServiceImpl implements FileService {
                            AuditService auditService) {
         LOG.info("fileStorageLocation={}", fileServerConfig.getHome());
         this.fileAccessService = fileAccessService;
-        this.fileStorageLocation = Paths.get(fileServerConfig.getHome())
-                .toAbsolutePath().normalize();
+        this.fileStorageLocation = Paths.get(fileServerConfig.getHome()).toAbsolutePath().normalize();
         this.auditService = auditService;
     }
 
@@ -46,13 +46,12 @@ public class FileServiceImpl implements FileService {
     }
 
     @Override
-    public ResourceAccessInfo getResourceAccessInfo(UserData userData, Path filePath) throws OperationNotAllowedException {
+    public ResourceAccessInfo getResourceAccessInfo(UserData userData,
+                                                    Path filePath) throws OperationNotAllowedException {
         LOG.info("getResourceAccessInfo: {}", filePath);
         verifyReadAccess(userData, filePath);
-        AuditQuery auditQuery = AuditQuery.newBuilder()
-                .withResourcePattern(filePath.toString())
-                .withCategory(AuditConstants.CategoryFileAccess.NAME)
-                .build();
+        AuditQuery auditQuery = AuditQuery.newBuilder().withResourcePattern(filePath.toString())
+                .withCategory(AuditConstants.CategoryFileAccess.NAME).build();
         Collection<AuditRecord> audits = auditService.getAudits(auditQuery);
         ResourceAccessInfo resourceAccessInfo = new ResourceAccessInfo();
         audits.forEach(a -> resourceAccessInfo.incrementCounter(a.getAction()));
@@ -60,13 +59,14 @@ public class FileServiceImpl implements FileService {
     }
 
     @Override
-    public Resource loadFileAsResource(UserData userData, Path filePath) throws FileNotFoundException, OperationNotAllowedException {
+    public Resource loadFileAsResource(UserData userData,
+                                       Path filePath) throws FileNotFoundException, OperationNotAllowedException {
         LOG.info("loadFileAsResource: {}", filePath);
         try {
             verifyReadAccess(userData, filePath);
             Path resolvedFilePath = this.fileStorageLocation.resolve(filePath).normalize();
             Resource resource = new UrlResource(resolvedFilePath.toUri());
-            if(resource.exists()) {
+            if (resource.exists()) {
                 createDownloadFileAuditRecord(userData, filePath);
                 return resource;
             } else {
@@ -87,16 +87,17 @@ public class FileServiceImpl implements FileService {
             filesWalk.forEach(fw -> {
                 Path pathToCheck = Paths.get(filePath.toString(), fw.getFileName().toString());
                 if (fileAccessService.canRead(userData.getRoles(), pathToCheck)) {
-                    if (resolvedFilePath.endsWith(fw)) {
+                    if (!resolvedFilePath.endsWith(fw)) {
                         //skip parent directory
-                    } else if (Files.isDirectory(fw)) {
-                        File file = fw.toFile();
-                        fileList.add(new DirectoryInfo(fw.getFileName().toString(), file.lastModified()));
-                    } else if (Files.isRegularFile(fw)) {
-                        File file = fw.toFile();
-                        fileList.add(new FileInfo(fw.getFileName().toString(), file.length(), file.lastModified()));
-                    } else {
-                        LOG.error("getFilesInfo skipped: {} is not regular file nor directory !", filePath);
+                        if (Files.isDirectory(fw)) {
+                            File file = fw.toFile();
+                            fileList.add(new DirectoryInfo(fw.getFileName().toString(), file.lastModified()));
+                        } else if (Files.isRegularFile(fw)) {
+                            File file = fw.toFile();
+                            fileList.add(new FileInfo(fw.getFileName().toString(), file.length(), file.lastModified()));
+                        } else {
+                            LOG.error("getFilesInfo skipped: {} is not regular file nor directory !", filePath);
+                        }
                     }
                 }
             });
@@ -106,15 +107,14 @@ public class FileServiceImpl implements FileService {
     }
 
     @Override
-    public void saveFile(UserData userData, Path filePath, InputStream inputStream) throws IOException, OperationNotAllowedException {
+    public void saveFile(UserData userData, Path filePath,
+                         InputStream inputStream) throws IOException, OperationNotAllowedException {
         LOG.info("saveFile: {}", filePath);
         verifyReadAndWriteAccess(userData, filePath);
         Path resolvedFilePath = this.fileStorageLocation.resolve(filePath).normalize();
-        byte[] buffer = new byte[inputStream.available()];
-        inputStream.read(buffer);
         File targetFile = resolvedFilePath.toFile();
         OutputStream outStream = new FileOutputStream(targetFile);
-        outStream.write(buffer);
+        FileCopyUtils.copy(inputStream, outStream);
         createUploadFileAuditRecord(userData, filePath);
     }
 
@@ -142,7 +142,8 @@ public class FileServiceImpl implements FileService {
     }
 
     @Override
-    public void move(UserData userData, Path sourcePath, Path destinationPath) throws IOException, OperationNotAllowedException {
+    public void move(UserData userData, Path sourcePath,
+                     Path destinationPath) throws IOException, OperationNotAllowedException {
         LOG.info("move: {}->{}", sourcePath, destinationPath);
         verifyReadAndWriteAccess(userData, sourcePath);
         verifyReadAndWriteAccess(userData, destinationPath);
@@ -176,38 +177,44 @@ public class FileServiceImpl implements FileService {
     /* AUDIT METHODS */
 
     private void createDownloadFileAuditRecord(UserData userData, Path filePath) {
-        AuditRecord auditRecord = new AuditRecord(Instant.now().getEpochSecond(), AuditConstants.CategoryFileAccess.NAME,
-                AuditConstants.CategoryFileAccess.DOWNLOAD, userData.getId().getId(), filePath.toString(), "OK", "");
+        AuditRecord auditRecord = new AuditRecord(Instant.now().getEpochSecond(),
+                AuditConstants.CategoryFileAccess.NAME, AuditConstants.CategoryFileAccess.DOWNLOAD,
+                userData.getId(), filePath.toString(), "OK", "");
         auditService.storeAudit(auditRecord);
     }
 
     private void createListDirectoryAuditRecord(UserData userData, Path filePath) {
-        AuditRecord auditRecord = new AuditRecord(Instant.now().getEpochSecond(), AuditConstants.CategoryFileAccess.NAME,
-                AuditConstants.CategoryFileAccess.LIST_DIR, userData.getId().getId(), filePath.toString(), "OK", "");
+        AuditRecord auditRecord = new AuditRecord(Instant.now().getEpochSecond(),
+                AuditConstants.CategoryFileAccess.NAME, AuditConstants.CategoryFileAccess.LIST_DIR,
+                userData.getId(), filePath.toString(), "OK", "");
         auditService.storeAudit(auditRecord);
     }
 
     private void createUploadFileAuditRecord(UserData userData, Path filePath) {
-        AuditRecord auditRecord = new AuditRecord(Instant.now().getEpochSecond(), AuditConstants.CategoryFileAccess.NAME,
-                AuditConstants.CategoryFileAccess.UPLOAD, userData.getId().getId(), filePath.toString(), "OK", "");
+        AuditRecord auditRecord = new AuditRecord(Instant.now().getEpochSecond(),
+                AuditConstants.CategoryFileAccess.NAME, AuditConstants.CategoryFileAccess.UPLOAD,
+                userData.getId(), filePath.toString(), "OK", "");
         auditService.storeAudit(auditRecord);
     }
 
     private void createDeleteAuditRecord(UserData userData, Path filePath) {
-        AuditRecord auditRecord = new AuditRecord(Instant.now().getEpochSecond(), AuditConstants.CategoryFileAccess.NAME,
-                AuditConstants.CategoryFileAccess.DELETE, userData.getId().getId(), filePath.toString(), "OK", "");
+        AuditRecord auditRecord = new AuditRecord(Instant.now().getEpochSecond(),
+                AuditConstants.CategoryFileAccess.NAME, AuditConstants.CategoryFileAccess.DELETE,
+                userData.getId(), filePath.toString(), "OK", "");
         auditService.storeAudit(auditRecord);
     }
 
     private void createCreateDirectoryAuditRecord(UserData userData, Path filePath) {
-        AuditRecord auditRecord = new AuditRecord(Instant.now().getEpochSecond(), AuditConstants.CategoryFileAccess.NAME,
-                AuditConstants.CategoryFileAccess.CREATE_DIR, userData.getId().getId(), filePath.toString(), "OK", "");
+        AuditRecord auditRecord = new AuditRecord(Instant.now().getEpochSecond(),
+                AuditConstants.CategoryFileAccess.NAME, AuditConstants.CategoryFileAccess.CREATE_DIR,
+                userData.getId(), filePath.toString(), "OK", "");
         auditService.storeAudit(auditRecord);
     }
 
     private void createMoveAuditRecord(UserData userData, Path sourcePath, Path destinationPath) {
-        AuditRecord auditRecord = new AuditRecord(Instant.now().getEpochSecond(), AuditConstants.CategoryFileAccess.NAME,
-                AuditConstants.CategoryFileAccess.MOVE, userData.getId().getId(), sourcePath.toString(), "OK", destinationPath.toString());
+        AuditRecord auditRecord = new AuditRecord(Instant.now().getEpochSecond(),
+                AuditConstants.CategoryFileAccess.NAME, AuditConstants.CategoryFileAccess.MOVE,
+                userData.getId(), sourcePath.toString(), "OK", destinationPath.toString());
         auditService.storeAudit(auditRecord);
     }
 

@@ -3,7 +3,6 @@ package itx.fileserver.services.data.base;
 import itx.fileserver.services.data.UserManagerService;
 import itx.fileserver.dto.RoleId;
 import itx.fileserver.dto.UserData;
-import itx.fileserver.dto.UserId;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -16,12 +15,12 @@ public abstract class UserManagerServiceImpl implements UserManagerService {
 
     private static final Logger LOG = LoggerFactory.getLogger(UserManagerServiceImpl.class);
 
-    protected Map<UserId, UserData> users;
+    protected Map<String, UserData> users;
     protected RoleId anonymousRole;
     protected RoleId adminRole;
 
     @Override
-    public Optional<UserData> getUser(UserId id) {
+    public Optional<UserData> getUser(String id) {
         return Optional.ofNullable(users.get(id));
     }
 
@@ -41,7 +40,7 @@ public abstract class UserManagerServiceImpl implements UserManagerService {
     }
 
     @Override
-    public void removeUser(UserId id) {
+    public void removeUser(String id) {
         LOG.debug("removeUser {}", id);
         users.remove(id);
         persist();

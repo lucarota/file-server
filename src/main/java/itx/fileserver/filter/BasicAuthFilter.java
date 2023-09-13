@@ -1,6 +1,5 @@
 package itx.fileserver.filter;
 
-import itx.fileserver.dto.SessionId;
 import itx.fileserver.dto.UserData;
 import itx.fileserver.services.SecurityService;
 import jakarta.servlet.*;
@@ -34,40 +33,37 @@ public class BasicAuthFilter implements Filter {
         HttpServletRequest request = (HttpServletRequest) servletRequest;
         HttpServletResponse response = (HttpServletResponse) servletResponse;
 
-        SessionId sessionId = new SessionId(httpSession.getId());
-        Optional<UserData> userData = securityService.isAuthorized(sessionId);
-        if (userData.isPresent()) {
-            filterChain.doFilter(servletRequest, servletResponse);
-        } else {
-            String authHeader = request.getHeader("Authorization");
-            if (authHeader != null) {
-                StringTokenizer st = new StringTokenizer(authHeader);
-                if (st.hasMoreTokens()) {
-                    String basic = st.nextToken();
+        String sessionId = httpSession.getId();
+        String authHeader = request.getHeader("Authorization");
+        if (securityService.isAnonymous(sessionId) && authHeader != null) {
+            handleBasicAuth(authHeader, sessionId, response);
+        }
+        filterChain.doFilter(servletRequest, servletResponse);
+    }
 
-                    if (basic.equalsIgnoreCase("Basic")) {
-                        try {
-                            String credentials = new String(Base64.getDecoder().decode(st.nextToken()));
-                            String[] cred = credentials.split(":");
-                            if (cred.length == 2) {
-                                String username = cred[0].trim();
-                                String password = cred[1].trim();
-                                userData = securityService.authorize(sessionId, username, password);
-                                if (userData.isEmpty()) {
-                                    unauthorized(response, "Bad credentials");
-                                }
-
-                                filterChain.doFilter(servletRequest, servletResponse);
-                            } else {
-                                unauthorized(response, "Invalid authentication token");
+    private void handleBasicAuth(String authHeader, String sessionId, HttpServletResponse response) throws IOException {
+        if (authHeader != null) {
+            StringTokenizer st = new StringTokenizer(authHeader);
+            if (st.hasMoreTokens()) {
+                String basic = st.nextToken();
+                if (basic.equalsIgnoreCase("Basic")) {
+                    try {
+                        String credentials = new String(Base64.getDecoder().decode(st.nextToken()));
+                        String[] cred = credentials.split(":");
+                        if (cred.length == 2) {
+                            String username = cred[0].trim();
+                            String password = cred[1].trim();
+                            Optional<UserData> userData = securityService.authorize(sessionId, username, password);
+                            if (userData.isEmpty()) {
+                                unauthorized(response, "Bad credentials");
                             }
-                        } catch (UnsupportedEncodingException e) {
-                            throw new Error("Couldn't retrieve authentication", e);
+                        } else {
+                            unauthorized(response, "Invalid authentication token");
                         }
+                    } catch (UnsupportedEncodingException e) {
+                        throw new Error("Couldn't retrieve authentication", e);
                     }
                 }
-            } else {
-                unauthorized(response);
             }
         }
     }
@@ -75,9 +71,5 @@ public class BasicAuthFilter implements Filter {
     private void unauthorized(HttpServletResponse response, String message) throws IOException {
         response.setHeader("WWW-Authenticate", "Basic realm=\"" + realm + "\"");
         response.sendError(401, message);
-    }
-
-    private void unauthorized(HttpServletResponse response) throws IOException {
-        unauthorized(response, "Unauthorized");
     }
 }

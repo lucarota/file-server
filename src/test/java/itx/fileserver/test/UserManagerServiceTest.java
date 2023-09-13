@@ -7,7 +7,6 @@ import itx.fileserver.dto.UserManagerData;
 import itx.fileserver.services.data.inmemory.UserManagerServiceInmemory;
 import itx.fileserver.dto.RoleId;
 import itx.fileserver.dto.UserData;
-import itx.fileserver.dto.UserId;
 import itx.fileserver.test.mocks.PersistenceServiceImpl;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -37,8 +36,8 @@ class UserManagerServiceTest {
     @ParameterizedTest
     @MethodSource("data")
     void userManagerServiceTest(UserManagerService userManagerService) {
-        UserId masterUserId = new UserId("master");
-        UserId newUserId = new UserId("newUser");
+        String masterUserId = "master";
+        String newUserId = "newUser";
 
         assertEquals(4, userManagerService.getUsers().size());
         Optional<UserData> userData = userManagerService.getUser(masterUserId);

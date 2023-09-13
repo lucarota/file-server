@@ -4,21 +4,21 @@ import java.util.Set;
 
 public class SessionInfo {
 
-    private final SessionId id;
-    private final UserId userId;
+    private final String id;
+    private final String userId;
     private final Set<RoleId> roles;
 
-    public SessionInfo(SessionId id, UserId userId, Set<RoleId> roles) {
+    public SessionInfo(String id, String userId, Set<RoleId> roles) {
         this.id = id;
         this.userId = userId;
         this.roles = roles;
     }
 
-    public SessionId getId() {
+    public String getId() {
         return id;
     }
 
-    public UserId getUserId() {
+    public String getUserId() {
         return userId;
     }
 

@@ -1,32 +1,21 @@
 package itx.fileserver.controler;
 
 import io.swagger.v3.oas.annotations.tags.Tag;
-import itx.fileserver.dto.MoveRequest;
+import itx.fileserver.dto.*;
 import itx.fileserver.services.FileService;
 import itx.fileserver.services.OperationNotAllowedException;
 import itx.fileserver.services.SecurityService;
-import itx.fileserver.dto.FileList;
-import itx.fileserver.dto.ResourceAccessInfo;
-import itx.fileserver.dto.SessionId;
-import itx.fileserver.dto.UserData;
+import jakarta.servlet.http.HttpSession;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.Resource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
-import jakarta.servlet.http.HttpServletRequest;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.NoSuchFileException;
@@ -36,7 +25,7 @@ import java.util.Optional;
 
 @RestController
 @RequestMapping(path = FileServerController.URI_PREFIX)
-@Tag(name="File Server")
+@Tag(name = "File Server")
 public class FileServerController {
 
     private static final Logger LOG = LoggerFactory.getLogger(FileServerController.class);
@@ -52,32 +41,26 @@ public class FileServerController {
 
     private final FileService fileService;
     private final SecurityService securityService;
-    private final HttpServletRequest httpServletRequest;
 
-    @Autowired
-    public FileServerController(FileService fileService,
-                                SecurityService securityService,
-                                HttpServletRequest httpServletRequest) {
+    public FileServerController(FileService fileService, SecurityService securityService) {
         this.fileService = fileService;
         this.securityService = securityService;
-        this.httpServletRequest = httpServletRequest;
     }
 
-    @GetMapping(DOWNLOAD_PREFIX + "**")
-    public ResponseEntity<Resource> downloadFile() {
+    @GetMapping(DOWNLOAD_PREFIX + "{*path}")
+    public ResponseEntity<Resource> downloadFile(HttpSession httpSession,
+                                                 @PathVariable(value = "path", required = false) String path) {
         try {
-            String contextPath = httpServletRequest.getRequestURI();
-            SessionId sessionId = new SessionId(httpServletRequest.getSession().getId());
+            String sessionId = httpSession.getId();
             Optional<UserData> userData = securityService.isAuthorized(sessionId);
             if (userData.isPresent()) {
-                Path filePath = Paths.get(contextPath.substring((URI_PREFIX + DOWNLOAD_PREFIX).length()));
+                Path filePath = getPath(path);
                 LOG.info("downloadFile: {}", filePath);
                 Resource resource = fileService.loadFileAsResource(userData.get(), filePath);
                 String contentType = "application/octet-stream";
-                return ResponseEntity.ok()
-                        .contentType(MediaType.parseMediaType(contentType))
-                        .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + resource.getFilename() + "\"")
-                        .body(resource);
+                return ResponseEntity.ok().contentType(MediaType.parseMediaType(contentType))
+                        .header(HttpHeaders.CONTENT_DISPOSITION,
+                                "attachment; filename=\"" + resource.getFilename() + "\"").body(resource);
             }
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         } catch (FileNotFoundException e) {
@@ -87,14 +70,14 @@ public class FileServerController {
         }
     }
 
-    @GetMapping(LIST_PREFIX + "**")
-    public ResponseEntity<FileList> getFiles() {
+    @GetMapping(value = LIST_PREFIX + "{*path}", produces = "application/json")
+    public ResponseEntity<FileList> getFiles(HttpSession httpSession,
+                                             @PathVariable(value = "path", required = false) String path) {
         try {
-            String contextPath = httpServletRequest.getRequestURI();
-            SessionId sessionId = new SessionId(httpServletRequest.getSession().getId());
+            String sessionId = httpSession.getId();
             Optional<UserData> userData = securityService.isAuthorized(sessionId);
             if (userData.isPresent()) {
-                Path filePath = Paths.get(contextPath.substring((URI_PREFIX + LIST_PREFIX).length()));
+                Path filePath = getPath(path);
                 LOG.info("getFiles: {}", filePath);
                 FileList fileInfo = fileService.getFilesInfo(userData.get(), filePath);
                 return ResponseEntity.ok().contentType(MediaType.APPLICATION_JSON).body(fileInfo);
@@ -109,14 +92,15 @@ public class FileServerController {
         }
     }
 
-    @PostMapping(UPLOAD_PREFIX + "**")
-    public ResponseEntity<Resource> fileUpload(@RequestParam("file") MultipartFile file) {
+    @PostMapping(value = UPLOAD_PREFIX + "{*path}", produces = "application/json")
+    public ResponseEntity<Resource> fileUpload(HttpSession httpSession,
+                                               @PathVariable(value = "path", required = false) String path,
+                                               @RequestParam("file") MultipartFile file) {
         try {
-            String contextPath = httpServletRequest.getRequestURI();
-            SessionId sessionId = new SessionId(httpServletRequest.getSession().getId());
+            String sessionId = httpSession.getId();
             Optional<UserData> userData = securityService.isAuthorized(sessionId);
             if (userData.isPresent()) {
-                Path filePath = Paths.get(contextPath.substring((URI_PREFIX + UPLOAD_PREFIX).length()));
+                Path filePath = getPath(path);
                 LOG.info("upload: {}", filePath);
                 fileService.saveFile(userData.get(), filePath, file.getInputStream());
                 return ResponseEntity.ok().build();
@@ -129,14 +113,14 @@ public class FileServerController {
         }
     }
 
-    @DeleteMapping(DELETE_PREFIX + "**")
-    public ResponseEntity<Resource> delete() {
+    @DeleteMapping(value = DELETE_PREFIX + "{*path}", produces = "application/json")
+    public ResponseEntity<Resource> delete(HttpSession httpSession,
+                                           @PathVariable(value = "path", required = false) String path) {
         try {
-            String contextPath = httpServletRequest.getRequestURI();
-            SessionId sessionId = new SessionId(httpServletRequest.getSession().getId());
+            String sessionId = httpSession.getId();
             Optional<UserData> userData = securityService.isAuthorized(sessionId);
             if (userData.isPresent()) {
-                Path filePath = Paths.get(contextPath.substring((URI_PREFIX + DELETE_PREFIX).length()));
+                Path filePath = getPath(path);
                 LOG.info("delete: {}", filePath);
                 fileService.delete(userData.get(), filePath);
                 return ResponseEntity.ok().build();
@@ -149,14 +133,14 @@ public class FileServerController {
         }
     }
 
-    @PostMapping(CREATEDIR_PREFIX + "**")
-    public ResponseEntity<Resource> createDirectory() {
+    @PostMapping(value = CREATEDIR_PREFIX + "{*path}", produces = "application/json")
+    public ResponseEntity<Resource> createDirectory(HttpSession httpSession,
+                                                    @PathVariable(value = "path", required = false) String path) {
         try {
-            String contextPath = httpServletRequest.getRequestURI();
-            SessionId sessionId = new SessionId(httpServletRequest.getSession().getId());
+            String sessionId = httpSession.getId();
             Optional<UserData> userData = securityService.isAuthorized(sessionId);
             if (userData.isPresent()) {
-                Path filePath = Paths.get(contextPath.substring((URI_PREFIX + CREATEDIR_PREFIX).length()));
+                Path filePath = getPath(path);
                 LOG.info("createDirectory: {}", filePath);
                 fileService.createDirectory(userData.get(), filePath);
                 return ResponseEntity.ok().build();
@@ -169,14 +153,15 @@ public class FileServerController {
         }
     }
 
-    @PostMapping(MOVE_PREFIX + "**")
-    public ResponseEntity<Resource> move(@RequestBody MoveRequest moveRequest) {
+    @PostMapping(MOVE_PREFIX + "{*path}")
+    public ResponseEntity<Resource> move(HttpSession httpSession,
+                                         @PathVariable(value = "path", required = false) String path,
+                                         @RequestBody MoveRequest moveRequest) {
         try {
-            String contextPath = httpServletRequest.getRequestURI();
-            SessionId sessionId = new SessionId(httpServletRequest.getSession().getId());
+            String sessionId = httpSession.getId();
             Optional<UserData> userData = securityService.isAuthorized(sessionId);
             if (userData.isPresent()) {
-                Path sourcePath = Paths.get(contextPath.substring((URI_PREFIX + MOVE_PREFIX).length()));
+                Path sourcePath = getPath(path);
                 Path destinationPath = Paths.get(moveRequest.getDestinationPath());
                 LOG.info("move: {}->{}", sourcePath, destinationPath);
                 fileService.move(userData.get(), sourcePath, destinationPath);
@@ -190,14 +175,14 @@ public class FileServerController {
         }
     }
 
-    @GetMapping(AUDIT_PREFIX + "**")
-    public ResponseEntity<ResourceAccessInfo> getAuditInfo() {
+    @GetMapping(AUDIT_PREFIX + "{*path}")
+    public ResponseEntity<ResourceAccessInfo> getAuditInfo(HttpSession httpSession,
+                                                           @PathVariable(value = "path", required = false) String path) {
         try {
-            String contextPath = httpServletRequest.getRequestURI();
-            SessionId sessionId = new SessionId(httpServletRequest.getSession().getId());
+            String sessionId = httpSession.getId();
             Optional<UserData> userData = securityService.isAuthorized(sessionId);
             if (userData.isPresent()) {
-                Path sourcePath = Paths.get(contextPath.substring((URI_PREFIX + AUDIT_PREFIX).length()));
+                Path sourcePath = getPath(path);
                 LOG.info("audit: {}", sourcePath);
                 ResourceAccessInfo resourceAccessInfo = fileService.getResourceAccessInfo(userData.get(), sourcePath);
                 return ResponseEntity.ok().body(resourceAccessInfo);
@@ -205,6 +190,14 @@ public class FileServerController {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         } catch (OperationNotAllowedException e) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+    }
+
+    private static Path getPath(String path) {
+        if (path.startsWith("/")) {
+            return Paths.get(path.substring(1));
+        } else {
+            return Paths.get(path);
         }
     }
 

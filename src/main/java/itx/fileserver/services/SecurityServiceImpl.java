@@ -18,8 +18,7 @@ public class SecurityServiceImpl implements SecurityService {
     private static final Logger LOG = LoggerFactory.getLogger(SecurityServiceImpl.class);
 
     private final UserManagerService userService;
-    private final Map<SessionId, UserData> authorizedSessions;
-    private final Map<SessionId, UserData> anonymousSessions;
+    private final Map<String, UserData> authorizedSessions;
     private final AuditService auditService;
 
     @Autowired
@@ -27,32 +26,35 @@ public class SecurityServiceImpl implements SecurityService {
         this.userService = userService;
         this.auditService = auditService;
         this.authorizedSessions = new ConcurrentHashMap<>();
-        this.anonymousSessions = new ConcurrentHashMap<>();
     }
 
     @Override
-    public UserData createAnonymousSession(SessionId sessionId) {
+    public UserData createAnonymousSession(String sessionId) {
         LOG.debug("createAnonymousSession {}", sessionId);
-        UserData userData = new UserData(new UserId(sessionId.getId()), userService.getAnonymousRole(), "");
-        UserData previousData = anonymousSessions.put(sessionId, userData);
+        UserData userData = new UserData("ANONYMOUS", userService.getAnonymousRole(), "");
+        UserData previousData = authorizedSessions.put(sessionId, userData);
         createAnonymousSessionRecord(previousData, sessionId);
         return userData;
     }
 
     @Override
-    public Optional<UserData> isAuthorized(SessionId sessionId) {
+    public Optional<UserData> isAuthorized(String sessionId) {
         LOG.debug("isAuthorized {}", sessionId);
         return Optional.ofNullable(authorizedSessions.get(sessionId));
     }
 
     @Override
-    public Optional<UserData> isAnonymous(SessionId sessionId) {
+    public boolean isAnonymous(String sessionId) {
         LOG.debug("isAnonymous {}", sessionId);
-        return Optional.ofNullable(anonymousSessions.get(sessionId));
+        UserData userData = authorizedSessions.get(sessionId);
+        if (userData != null && userData.getRoles().size() == 1) {
+            return userData.getRoles().contains(userService.getAnonymousRole());
+        }
+        return false;
     }
 
     @Override
-    public boolean isAuthorizedAdmin(SessionId sessionId) {
+    public boolean isAuthorizedAdmin(String sessionId) {
         LOG.debug("isAuthorizedAdmin {}", sessionId);
         UserData userData = authorizedSessions.get(sessionId);
         if (userData != null) {
@@ -62,13 +64,11 @@ public class SecurityServiceImpl implements SecurityService {
     }
 
     @Override
-    public Optional<UserData> authorize(SessionId sessionId, String username, String password) {
+    public Optional<UserData> authorize(String sessionId, String username, String password) {
         LOG.debug("authorize {} {}", username, sessionId);
-        UserId userId = new UserId(username);
-        Optional<UserData> userData = userService.getUser(userId);
+        Optional<UserData> userData = userService.getUser(username);
         if (userData.isPresent() && userData.get().verifyPassword(password)) {
             authorizedSessions.put(sessionId, userData.get());
-            anonymousSessions.remove(sessionId);
             createLoginRecordOK(username, sessionId);
             return userData;
         }
@@ -77,24 +77,18 @@ public class SecurityServiceImpl implements SecurityService {
     }
 
     @Override
-    public void terminateSession(SessionId sessionId) {
+    public void terminateSession(String sessionId) {
         LOG.debug("terminateSession {}", sessionId);
         UserData userDataAuthorized = authorizedSessions.remove(sessionId);
-        UserData userDataAnonymous = anonymousSessions.remove(sessionId);
-        createLogoutRecord(userDataAuthorized, userDataAnonymous, sessionId);
+        createLogoutRecord(userDataAuthorized, sessionId);
     }
 
     @Override
-    public Optional<Set<RoleId>> getRoles(SessionId sessionId) {
+    public Optional<Set<RoleId>> getRoles(String sessionId) {
         LOG.debug("getRoles {}", sessionId);
         UserData userData = authorizedSessions.get(sessionId);
         if (userData != null) {
             return Optional.of(userData.getRoles());
-        } else {
-            userData = anonymousSessions.get(sessionId);
-            if (userData != null) {
-                return Optional.of(userData.getRoles());
-            }
         }
         return Optional.empty();
     }
@@ -105,10 +99,11 @@ public class SecurityServiceImpl implements SecurityService {
         List<SessionInfo> anonymous = new ArrayList<>();
         List<SessionInfo> users = new ArrayList<>();
         List<SessionInfo> admins = new ArrayList<>();
-        anonymousSessions.forEach((id, user) -> anonymous.add(new SessionInfo(id, user.getId(), user.getRoles())));
         authorizedSessions.forEach((id, user) -> {
             if (user.getRoles().contains(userService.getAdminRole())) {
                 admins.add(new SessionInfo(id, user.getId(), user.getRoles()));
+            } else if (user.getRoles().contains(userService.getAnonymousRole())) {
+                anonymous.add(new SessionInfo(id, user.getId(), user.getRoles()));
             } else {
                 users.add(new SessionInfo(id, user.getId(), user.getRoles()));
             }
@@ -118,40 +113,34 @@ public class SecurityServiceImpl implements SecurityService {
 
     /* AUDITING METHODS */
 
-    private void createAnonymousSessionRecord(UserData previousData, SessionId sessionId) {
+    private void createAnonymousSessionRecord(UserData previousData, String sessionId) {
         if (previousData == null) {
             AuditRecord auditRecord = new AuditRecord(Instant.now().getEpochSecond(),
                     AuditConstants.CategoryUserAccess.NAME, AuditConstants.CategoryUserAccess.LOGIN, "ANONYMOUS", "",
-                    "OK", sessionId.getId());
+                    "OK", sessionId);
             auditService.storeAudit(auditRecord);
         }
     }
 
-    private void createLoginRecordOK(String userId, SessionId sessionId) {
+    private void createLoginRecordOK(String userId, String sessionId) {
         AuditRecord auditRecord = new AuditRecord(Instant.now().getEpochSecond(),
                 AuditConstants.CategoryUserAccess.NAME, AuditConstants.CategoryUserAccess.LOGIN, userId, "", "OK",
-                sessionId.getId());
+                sessionId);
         auditService.storeAudit(auditRecord);
     }
 
-    private void createLoginRecordFailed(String userId, SessionId sessionId) {
+    private void createLoginRecordFailed(String userId, String sessionId) {
         AuditRecord auditRecord = new AuditRecord(Instant.now().getEpochSecond(),
                 AuditConstants.CategoryUserAccess.NAME, AuditConstants.CategoryUserAccess.LOGIN, userId, "", "ERROR",
-                sessionId.getId());
+                sessionId);
         auditService.storeAudit(auditRecord);
     }
 
-    private void createLogoutRecord(UserData userDataAuthorized, UserData userDataAnonymous, SessionId sessionId) {
+    private void createLogoutRecord(UserData userDataAuthorized, String sessionId) {
         if (userDataAuthorized != null) {
             AuditRecord auditRecord = new AuditRecord(Instant.now().getEpochSecond(),
                     AuditConstants.CategoryUserAccess.NAME, AuditConstants.CategoryUserAccess.LOGOUT,
-                    userDataAuthorized.getId().getId(), "", "OK", sessionId.getId());
-            auditService.storeAudit(auditRecord);
-        }
-        if (userDataAnonymous != null) {
-            AuditRecord auditRecord = new AuditRecord(Instant.now().getEpochSecond(),
-                    AuditConstants.CategoryUserAccess.NAME, AuditConstants.CategoryUserAccess.LOGOUT, "ANONYMOUS", "",
-                    "OK", sessionId.getId());
+                    userDataAuthorized.getId(), "", "OK", sessionId);
             auditService.storeAudit(auditRecord);
         }
     }

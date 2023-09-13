@@ -5,7 +5,6 @@ import itx.fileserver.services.data.base.UserManagerServiceImpl;
 import itx.fileserver.dto.UserManagerData;
 import itx.fileserver.dto.RoleId;
 import itx.fileserver.dto.UserData;
-import itx.fileserver.dto.UserId;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -34,7 +33,7 @@ public class UserManagerServiceFilesystem extends UserManagerServiceImpl {
         userManagerData.getUsers().forEach(uc->{
             Set<RoleId> roles = new HashSet<>();
             uc.getRoles().forEach(r-> roles.add(new RoleId(r)));
-            UserData userData = new UserData(new UserId(uc.getUsername()), roles, uc.getPassword());
+            UserData userData = new UserData(uc.getUsername(), roles, uc.getPassword());
             LOG.info("User: {}", uc.getUsername());
             users.put(userData.getId(), userData);
         });
@@ -51,7 +50,7 @@ public class UserManagerServiceFilesystem extends UserManagerServiceImpl {
             users.values().forEach(u->{
                 List<String> roles = new ArrayList<>();
                 u.getRoles().forEach(r -> roles.add(r.getId()));
-                userConfigList.add(new UserConfig(u.getId().getId(), u.password(), roles));
+                userConfigList.add(new UserConfig(u.getId(), u.password(), roles));
             });
             UserManagerData userManagerData = new UserManagerData(anonymousRole.getId(), adminRole.getId(), userConfigList);
             persistenceService.persist(dataPath, userManagerData);

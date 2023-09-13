@@ -8,12 +8,12 @@ import java.util.Set;
 
 public class UserData {
 
-    private final UserId id;
+    private final String id;
     private final Set<RoleId> roles;
     private final String password;
 
     @JsonCreator
-    public UserData(@JsonProperty("id") UserId id,
+    public UserData(@JsonProperty("id") String id,
                     @JsonProperty("roles") Set<RoleId> roles,
                     @JsonProperty("password") String password) {
         this.id = id;
@@ -21,14 +21,14 @@ public class UserData {
         this.password = password;
     }
 
-    public UserData(UserId id, RoleId role, String password) {
+    public UserData(String id, RoleId role, String password) {
         this.id = id;
         this.roles = new HashSet<>();
         this.roles.add(role);
         this.password = password;
     }
 
-    public UserId getId() {
+    public String getId() {
         return id;
     }
 

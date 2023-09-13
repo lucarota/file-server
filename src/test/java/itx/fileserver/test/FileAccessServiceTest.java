@@ -12,7 +12,6 @@ import itx.fileserver.services.data.inmemory.AuditServiceInmemory;
 import itx.fileserver.services.data.inmemory.FileAccessManagerServiceInmemory;
 import itx.fileserver.services.data.inmemory.UserManagerServiceInmemory;
 import itx.fileserver.dto.RoleId;
-import itx.fileserver.dto.SessionId;
 import itx.fileserver.dto.UserData;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -30,9 +29,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class FileAccessServiceTest {
 
-    private static final SessionId authorizedSessionJoe = new SessionId("SessionJoe");
-    private static final SessionId authorizedSessionJane = new SessionId("SessionJane");
-    private static final SessionId authorizedSessionPublic = new SessionId("SessionPublic");
+    private static final String authorizedSessionJoe = "SessionJoe";
+    private static final String authorizedSessionJane = "SessionJane";
+    private static final String authorizedSessionPublic = "SessionPublic";
     private static final String validPassword = "secret";
 
     private static FileAccessService fileAccessService;
@@ -46,7 +45,7 @@ class FileAccessServiceTest {
         AuditService auditService = new AuditServiceInmemory(1024);
         securityService = new SecurityServiceImpl(userManagerService, auditService);
         fileAccessService = new FileAccessServiceImpl(fileAccessManagerService);
-        Optional<UserData> authorized = null;
+        Optional<UserData> authorized;
 
         authorized = securityService.authorize(authorizedSessionJoe, "joe", validPassword);
         assertTrue(authorized.isPresent());
@@ -92,18 +91,20 @@ class FileAccessServiceTest {
 
     @ParameterizedTest
     @MethodSource("data")
-    void testReadAccess(SessionId sessionId, String path, boolean expectedCanRead, boolean expectedCanReadAndWrite) {
+    void testReadAccess(String sessionId, String path, boolean expectedCanRead, boolean ignored) {
         Optional<Set<RoleId>> roles = securityService.getRoles(sessionId);
         Path p = Paths.get(path);
+        assertTrue(roles.isPresent());
         boolean canRead = fileAccessService.canRead(roles.get(), p);
         assertEquals(canRead, expectedCanRead);
     }
 
     @ParameterizedTest
     @MethodSource("data")
-    void testWriteAccess(SessionId sessionId, String path, boolean expectedCanRead, boolean expectedCanReadAndWrite) {
+    void testWriteAccess(String sessionId, String path, boolean ignored, boolean expectedCanReadAndWrite) {
         Optional<Set<RoleId>> roles = securityService.getRoles(sessionId);
         Path p = Paths.get(path);
+        assertTrue(roles.isPresent());
         boolean canReadAndWrite = fileAccessService.canReadAndWrite(roles.get(), p);
         assertEquals(canReadAndWrite, expectedCanReadAndWrite);
     }

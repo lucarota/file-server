@@ -59,7 +59,7 @@ class FileServerITTest {
         UserData userData = responseEntity.getBody();
         assertNotNull(userData);
         assertNotNull(userData.getId());
-        assertEquals("master", userData.getId().getId());
+        assertEquals("master", userData.getId());
         assertNotNull(userData.getRoles());
 
         HttpHeaders headers = responseEntity.getHeaders();

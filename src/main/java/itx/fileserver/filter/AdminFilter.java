@@ -1,6 +1,5 @@
 package itx.fileserver.filter;
 
-import itx.fileserver.dto.SessionId;
 import itx.fileserver.services.SecurityService;
 import jakarta.servlet.*;
 import jakarta.servlet.http.HttpServletRequest;
@@ -26,7 +25,7 @@ public class AdminFilter implements Filter {
                          FilterChain chain) throws IOException, ServletException {
         HttpServletRequest request = (HttpServletRequest) servletRequest;
         HttpServletResponse response = (HttpServletResponse) servletResponse;
-        SessionId sessionId = new SessionId(request.getSession().getId());
+        String sessionId = request.getSession().getId();
         if (securityService.isAuthorizedAdmin(sessionId)) {
             chain.doFilter(request, response);
         } else {
