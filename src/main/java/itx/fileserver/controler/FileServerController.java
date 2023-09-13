@@ -1,5 +1,6 @@
 package itx.fileserver.controler;
 
+import io.swagger.v3.oas.annotations.tags.Tag;
 import itx.fileserver.dto.MoveRequest;
 import itx.fileserver.services.FileService;
 import itx.fileserver.services.OperationNotAllowedException;
@@ -35,6 +36,7 @@ import java.util.Optional;
 
 @RestController
 @RequestMapping(path = FileServerController.URI_PREFIX)
+@Tag(name="File Server")
 public class FileServerController {
 
     private static final Logger LOG = LoggerFactory.getLogger(FileServerController.class);

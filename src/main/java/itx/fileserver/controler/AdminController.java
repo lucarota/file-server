@@ -1,5 +1,6 @@
 package itx.fileserver.controler;
 
+import io.swagger.v3.oas.annotations.tags.Tag;
 import itx.fileserver.dto.*;
 import itx.fileserver.services.FileService;
 import itx.fileserver.services.OperationNotAllowedException;
@@ -23,6 +24,7 @@ import java.util.Set;
 
 @RestController
 @RequestMapping(path = "/services/admin")
+@Tag(name="Admin")
 public class AdminController {
 
     private static final Logger LOG = LoggerFactory.getLogger(AdminController.class);

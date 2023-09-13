@@ -1,5 +1,6 @@
 package itx.fileserver.controler;
 
+import io.swagger.v3.oas.annotations.tags.Tag;
 import itx.fileserver.services.SecurityService;
 import itx.fileserver.dto.LoginRequest;
 import itx.fileserver.dto.SessionId;
@@ -20,6 +21,7 @@ import java.util.Optional;
 
 @RestController
 @RequestMapping(path = "/services/auth")
+@Tag(name="Auth")
 public class AuthController {
 
     private static final Logger LOG = LoggerFactory.getLogger(AuthController.class);
@@ -35,9 +37,9 @@ public class AuthController {
 
     @PostMapping("/login")
     public ResponseEntity<UserData> login(@RequestBody LoginRequest loginRequest) {
-        LOG.info("login: {} {}", loginRequest.getUserName(), httpSession.getId());
+        LOG.info("login: {} {}", loginRequest.getUsername(), httpSession.getId());
         SessionId sessionId = new SessionId(httpSession.getId());
-        Optional<UserData> userData = securityService.authorize(sessionId, loginRequest.getUserName(), loginRequest.getPassword());
+        Optional<UserData> userData = securityService.authorize(sessionId, loginRequest.getUsername(), loginRequest.getPassword());
         return userData.map(data -> ResponseEntity.ok().body(data))
                 .orElseGet(() -> ResponseEntity.status(HttpStatus.BAD_REQUEST).build());
     }
