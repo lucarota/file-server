@@ -1,11 +1,15 @@
 package itx.fileserver.controler;
 
 import io.swagger.v3.oas.annotations.tags.Tag;
-import itx.fileserver.dto.*;
+import itx.fileserver.dto.FileList;
+import itx.fileserver.dto.MoveRequest;
+import itx.fileserver.dto.ResourceAccessInfo;
+import itx.fileserver.dto.UserData;
 import itx.fileserver.services.FileService;
 import itx.fileserver.services.OperationNotAllowedException;
 import itx.fileserver.services.SecurityService;
 import jakarta.servlet.http.HttpSession;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.io.Resource;
@@ -18,6 +22,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -57,16 +62,19 @@ public class FileServerController {
                 Path filePath = getPath(path);
                 LOG.info("downloadFile: {}", filePath);
                 Resource resource = fileService.loadFileAsResource(userData.get(), filePath);
-                String contentType = "application/octet-stream";
+                String contentType = StringUtils.defaultString(Files.probeContentType(resource.getFile().toPath()),
+                        "application/octet-stream");
                 return ResponseEntity.ok().contentType(MediaType.parseMediaType(contentType))
                         .header(HttpHeaders.CONTENT_DISPOSITION,
                                 "attachment; filename=\"" + resource.getFilename() + "\"").body(resource);
             }
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         } catch (FileNotFoundException e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
         } catch (OperationNotAllowedException e) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        } catch (IOException e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
 
