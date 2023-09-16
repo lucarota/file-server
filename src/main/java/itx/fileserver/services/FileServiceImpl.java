@@ -80,7 +80,7 @@ public class FileServiceImpl implements FileService {
     @Override
     public FileList getFilesInfo(UserData userData, Path filePath) throws IOException, OperationNotAllowedException {
         LOG.info("getFilesInfo: {}", filePath);
-        verifyReadAccess(userData, filePath.resolve("*"));
+        verifyReadAccess(userData, filePath.resolve(""));
         FileList fileList = new FileList(filePath.toString());
         Path resolvedFilePath = this.fileStorageLocation.resolve(filePath).normalize();
         try (Stream<Path> filesWalk = Files.walk(resolvedFilePath, 1)) {
